@@ -1,37 +1,37 @@
-import requests
-from datetime import datetime
+import requests,json,os
 
-header = {
-    # "authority": "glados.rocks",
-    # "method": "POST",
-    # "path": "/api/user/checkin",
-    # "scheme": "https",
-    "accept": "application/json, text/plain, */*",
-    "accept-encoding": "gzip, deflate, br",
-    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-    "content-type": "application/json;charset=UTF-8",
-    "cookie": '_ga=GA1.2.876969835.1654698637; _gid=GA1.2.1075006440.1655782461; '
-              'koa:sess=eyJ1c2VySWQiOjE1NTc4NCwiX2V4cGlyZSI6MTY4MTcwMjU5MTczNiwiX21heEFnZSI6MjU5MjAwMDAwMDB9; '
-              'koa:sess.sig=0Goj0cWuxibbrwTSCQOD8OMxsFo; _gat_gtag_UA_104464600_2=1',
-    "origin": "https://glados.rocks",
-    "sec-ch-ua": '" Not A;Brand";v="99", "Chromium";v="102", "Microsoft Edge";v="102"',
-    "sec-ch-ua-mobile": '?0',
-    "sec-ch-ua-platform": '"Windows"',
-    'sec-fetch-dest': 'empty',
-    "sec-fetch-mode": 'cors',
-    "sec-fetch-site": "same-origin"
-}
+# server酱开关，填off不开启(默认)，填on同时开启cookie失效通知和签到成功通知
+sever = os.environ["SERVE"]
+# 填写server酱sckey,不开启server酱则不用填
+sckey = os.environ["SCKEY"]
+#'SCU89402Tf98b7f01ca3394b9ce9aa5e2ed1abbae5e6ca42796bb9'
+# 填入glados账号对应cookie
+cookie = os.environ["COOKIE"]
+#'__cfduid=d3459ec306384ca67a65170f8e2a5bd561593049467; _ga=GA1.2.766373509.1593049472; _gid=GA1.2.1338236108.1593049472; koa:sess=eyJ1c2VySWQiOjQxODMwLCJfZXhwaXJlIjoxNjE4OTY5NTI4MzY4LCJfbWF4QWdlIjoyNTkyMDAwMDAwMH0=; koa:sess.sig=6qG8SyMh_5KpSB6LBc9yRviaPvI'
 
-sendcodePayload = {
-    "address": "504024159@qq.com",
-    "site": "glados.network"
-}
 
-token ={
-    "token": "glados.network"
-}
 
-r = requests.post("https://glados.rocks/api/user/checkin", headers=header, json=token)
-# r1 = requests.post("https://glados.rocks/api/user/status", headers=header)
-print(r.content)
-print(len(r.content))
+def start():
+    
+    url= "https://glados.rocks/api/user/checkin"
+    url2= "https://glados.rocks/api/user/status"
+    referer = 'https://glados.rocks/console/checkin'
+    checkin = requests.post(url,headers={'cookie': cookie ,'referer': referer })
+    state =  requests.get(url2,headers={'cookie': cookie ,'referer': referer})
+   # print(res)
+
+    if 'message' in checkin.text:
+        mess = checkin.json()['message']
+        time = state.json()['data']['leftDays']
+        time = time.split('.')[0]
+        #print(time)
+        if sever == 'on':
+            requests.get('https://sc.ftqq.com/' + sckey + '.send?text='+mess+'，you have '+time+' days left')
+    else:
+        requests.get('https://sc.ftqq.com/' + sckey + '.send?text=cookie过期')
+
+def main_handler(event, context):
+  return start()
+
+if __name__ == '__main__':
+    start()
